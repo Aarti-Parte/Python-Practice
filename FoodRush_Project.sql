@@ -992,9 +992,486 @@ SELECT 'reviews', COUNT(*) FROM reviews;
 
 
 
---Q1 :Find the total number of customers in the FoodRush system.
+-- Q1 :Find the total number of customers in the FoodRush system.
 
 
 
 SELECT COUNT(*) AS total_customers
 FROM customers;
+
+USE foodrush;
+-- Question 2: Find the total number of restaurants
+
+SELECT COUNT(*) AS total_restaurants
+FROM restaurants;
+
+
+-- Question 3: Find the total number of food categories
+SELECT COUNT(*) AS total_categories
+FROM food_categories;
+
+-- Question 4: Find the total number of menu items
+SELECT COUNT(*) AS total_menu_items
+FROM menu_items;
+
+
+
+-- Question 5: Find the total number of delivery partners
+SELECT COUNT(*) AS total_delivery_partners
+FROM delivery_partners;
+
+
+-- Question 6: Find the total number of orders
+SELECT COUNT(*) AS total_orders
+
+
+
+-- Question 7: Find the total number of order items
+SELECT COUNT(*) AS total_order_items
+
+
+-- Question 8: Find the total number of payments
+SELECT COUNT(*) AS total_payments
+FROM payments;
+
+
+-- Question 9: Find the total number of deliveries
+SELECT COUNT(*) AS total_deliveries
+FROM deliveries;
+
+-- Question 10: Find the total number of coupons
+SELECT COUNT(*) AS total_coupons
+FROM coupons;
+
+
+
+
+
+-- Question 11: Find the total number of reviews
+SELECT COUNT(*) AS total_reviews
+
+
+
+-- Question 12: Find the total revenue generated from all orders
+SELECT SUM(total_amount) AS total_revenue
+FROM orders;
+
+
+
+
+-- Question 13: Find the average order value
+SELECT AVG(total_amount) AS average_order_value
+
+
+
+
+
+
+-- Question 14: Find the highest order amount
+SELECT MAX(total_amount) AS highest_order_amount
+FROM orders;
+
+
+
+-- Question 15: Find the lowest order amount
+SELECT MIN(total_amount) AS lowest_order_amount
+FROM orders;
+
+
+-- Question 16: Find the total discount given on all orders
+SELECT SUM(discount) AS total_discount
+FROM orders;
+
+
+-- Question 17: Find the total tax collected
+SELECT SUM(tax) AS total_tax
+FROM orders;
+
+
+-- Find the total delivery charges collected from all orders.
+SELECT SUM(delivery_fee) AS total_delivery_charges
+FROM orders;
+
+-- Find the total number of cancelled orders.
+
+SELECT COUNT(*) AS cancelled_orders
+FROM orders
+WHERE order_status = 'Cancelled';
+
+
+-- Find the cancellation rate of orders.
+SELECT 
+    ROUND(
+        (COUNT(CASE WHEN order_status = 'Cancelled' THEN 1 END) * 100.0) 
+        / COUNT(*), 
+        2
+    ) AS cancellation_rate
+FROM orders;
+
+
+
+-- Find the average delivery time in minutes.
+
+
+DESCRIBE deliveries;
+
+SELECT 
+    ROUND(
+        AVG(TIMESTAMPDIFF(MINUTE, pickup_time, delivery_time)), 
+        2
+    ) AS average_delivery_time_minutes
+FROM deliveries
+WHERE pickup_time IS NOT NULL
+  AND delivery_time IS NOT NULL;
+  
+  
+ -- Q22: Find the number of successful/completed orders.
+ 
+ 
+SELECT COUNT(*) AS completed_orders
+FROM orders
+WHERE order_status = 'Delivered';
+
+
+
+-- Question 23:Find the number of pending orders.
+
+SELECT COUNT(*) AS pending_orders
+FROM orders
+WHERE order_status = 'Pending';
+
+
+-- Question 24:Find the number of orders that are currently cancelled.
+
+SELECT 
+    r.restaurant_name,
+    ROUND(SUM(o.total_amount), 2) AS total_revenue
+FROM restaurants r
+JOIN orders o 
+    ON r.restaurant_id = o.restaurant_id
+GROUP BY r.restaurant_id, r.restaurant_name
+ORDER BY total_revenue DESC
+LIMIT 5;
+
+-- Question 25:Find the top 5 most ordered menu items based on total quantity sold.
+
+SELECT 
+    m.item_name,
+    SUM(oi.quantity) AS total_quantity_sold
+FROM menu_items m
+JOIN order_items oi 
+    ON m.item_id = oi.item_id
+GROUP BY m.item_id, m.item_name
+ORDER BY total_quantity_sold DESC
+LIMIT 5;
+
+
+
+-- Question 26:Find the restaurant with the highest number of orders.
+
+SELECT 
+    r.restaurant_name,
+    COUNT(o.order_id) AS total_orders
+FROM restaurants r
+JOIN orders o 
+    ON r.restaurant_id = o.restaurant_id
+GROUP BY r.restaurant_id, r.restaurant_name
+ORDER BY total_orders DESC
+LIMIT 1;
+
+
+-- Question 27:Find the top 5 customers based on their total spending.
+
+
+describe customers;
+
+
+SELECT 
+    CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
+    ROUND(SUM(o.total_amount), 2) AS total_spending
+FROM customers c
+JOIN orders o
+    ON c.customer_id = o.customer_id
+GROUP BY c.customer_id, c.first_name, c.last_name
+ORDER BY total_spending DESC
+LIMIT 5;
+
+
+-- Question 28:Find the most popular payment method based on the number of payments.
+
+SELECT 
+    payment_method,
+    COUNT(*) AS total_payments
+FROM payments
+GROUP BY payment_method
+ORDER BY total_payments DESC
+LIMIT 1;
+
+
+-- Question 29 :Find the top 5 delivery partners based on the number of deliveries completed.
+
+SELECT 
+    d.delivery_partner_id,
+    COUNT(d.delivery_id) AS total_deliveries
+FROM deliveries d
+WHERE d.delivery_status = 'Delivered'
+GROUP BY d.delivery_partner_id
+ORDER BY total_deliveries DESC
+LIMIT 5;
+
+
+-- Question 30 :Find the most popular food category based on the number of menu items.
+
+SELECT 
+    fc.category_name,
+    COUNT(m.item_id) AS total_menu_items
+FROM food_categories fc
+JOIN menu_items m
+    ON fc.category_id = m.category_id
+GROUP BY fc.category_id, fc.category_name
+ORDER BY total_menu_items DESC
+LIMIT 1;
+
+-- Question 31: Find the average rating given by customers for each restaurant.
+
+SELECT 
+    r.restaurant_name,
+    ROUND(AVG(rv.rating), 2) AS average_rating
+FROM restaurants r
+JOIN reviews rv
+    ON r.restaurant_id = rv.restaurant_id
+GROUP BY r.restaurant_id, r.restaurant_name
+ORDER BY average_rating DESC;
+
+-- Question 32: Find the total number of reviews received by each restaurant.
+
+SELECT 
+    r.restaurant_name,
+    COUNT(rv.review_id) AS total_reviews
+FROM restaurants r
+JOIN reviews rv
+    ON r.restaurant_id = rv.restaurant_id
+GROUP BY r.restaurant_id, r.restaurant_name
+ORDER BY total_reviews DESC;
+
+-- Question 33: Find the restaurant with the highest average rating.
+
+SELECT 
+    r.restaurant_name,
+    ROUND(AVG(rv.rating), 2) AS average_rating
+FROM restaurants r
+JOIN reviews rv
+    ON r.restaurant_id = rv.restaurant_id
+GROUP BY r.restaurant_id, r.restaurant_name
+ORDER BY average_rating DESC
+LIMIT 1;
+
+
+-- Question 34: Find the total revenue generated by each restaurant.
+
+SELECT 
+    r.restaurant_name,
+    ROUND(SUM(o.total_amount), 2) AS total_revenue
+FROM restaurants r
+JOIN orders o
+    ON r.restaurant_id = o.restaurant_id
+GROUP BY r.restaurant_id, r.restaurant_name
+ORDER BY total_revenue DESC;
+
+-- Question 35: Find the restaurant with the lowest total revenue.
+
+SELECT 
+    r.restaurant_name,
+    ROUND(SUM(o.total_amount), 2) AS total_revenue
+FROM restaurants r
+JOIN orders o
+    ON r.restaurant_id = o.restaurant_id
+GROUP BY r.restaurant_id, r.restaurant_name
+ORDER BY total_revenue ASC
+LIMIT 1;
+
+-- Question 36: Find the restaurant with the highest total revenue
+
+SELECT 
+    r.restaurant_name,
+    ROUND(SUM(o.total_amount), 2) AS total_revenue
+FROM restaurants r
+JOIN orders o
+    ON r.restaurant_id = o.restaurant_id
+GROUP BY r.restaurant_id, r.restaurant_name
+ORDER BY total_revenue DESC
+LIMIT 1;
+
+-- Question 37: Find the restaurant with the highest average rating
+
+SELECT 
+    r.restaurant_name,
+    ROUND(AVG(rv.rating), 2) AS average_rating
+FROM restaurants r
+JOIN reviews rv
+    ON r.restaurant_id = rv.restaurant_id
+GROUP BY r.restaurant_id, r.restaurant_name
+ORDER BY average_rating DESC
+LIMIT 1;
+
+-- Question 38: Find the restaurant with the lowest average rating
+
+SELECT 
+    r.restaurant_name,
+    ROUND(AVG(rv.rating), 2) AS average_rating
+FROM restaurants r
+JOIN reviews rv
+    ON r.restaurant_id = rv.restaurant_id
+GROUP BY r.restaurant_id, r.restaurant_name
+ORDER BY average_rating ASC
+LIMIT 1;
+
+
+
+-- Question 39: Find the restaurant with the highest number of reviews
+
+SELECT 
+    r.restaurant_name,
+    COUNT(rv.review_id) AS total_reviews
+FROM restaurants r
+JOIN reviews rv
+    ON r.restaurant_id = rv.restaurant_id
+GROUP BY r.restaurant_id, r.restaurant_name
+ORDER BY total_reviews DESC
+LIMIT 1;
+
+
+-- Question 40: Find the restaurant with the lowest number of reviews
+
+SELECT 
+    r.restaurant_name,
+    COUNT(rv.review_id) AS total_reviews
+FROM restaurants r
+JOIN reviews rv
+    ON r.restaurant_id = rv.restaurant_id
+GROUP BY r.restaurant_id, r.restaurant_name
+ORDER BY total_reviews ASC
+LIMIT 1;
+
+
+-- Question 41: Find the restaurant with the highest number of delivered orders
+
+SELECT 
+    r.restaurant_name,
+    COUNT(o.order_id) AS delivered_orders
+FROM restaurants r
+JOIN orders o
+    ON r.restaurant_id = o.restaurant_id
+WHERE o.order_status = 'Delivered'
+GROUP BY r.restaurant_id, r.restaurant_name
+ORDER BY delivered_orders DESC
+LIMIT 1;
+
+
+
+-- Question 43: Find the restaurant with the highest total number of orders
+
+SELECT 
+    r.restaurant_name,
+    COUNT(o.order_id) AS total_orders
+FROM restaurants r
+JOIN orders o
+    ON r.restaurant_id = o.restaurant_id
+GROUP BY r.restaurant_id, r.restaurant_name
+ORDER BY total_orders DESC
+LIMIT 1;
+
+
+-- Question 44: Find the restaurant with the lowest total number of orders
+
+SELECT 
+    r.restaurant_name,
+    COUNT(o.order_id) AS total_orders
+FROM restaurants r
+JOIN orders o
+    ON r.restaurant_id = o.restaurant_id
+GROUP BY r.restaurant_id, r.restaurant_name
+ORDER BY total_orders ASC
+LIMIT 1;
+
+-- Question 45: Find the customer with the highest number of orders
+
+SELECT 
+    CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
+    COUNT(o.order_id) AS total_orders
+FROM customers c
+JOIN orders o
+    ON c.customer_id = o.customer_id
+GROUP BY c.customer_id, c.first_name, c.last_name
+ORDER BY total_orders DESC
+LIMIT 1;
+
+
+
+-- Question 46: Find the customer with the lowest number of orders
+
+SELECT 
+    CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
+    COUNT(o.order_id) AS total_orders
+FROM customers c
+JOIN orders o
+    ON c.customer_id = o.customer_id
+GROUP BY c.customer_id, c.first_name, c.last_name
+ORDER BY total_orders ASC
+LIMIT 1;
+
+
+
+-- Question 47: Find the customer with the highest total spending
+
+SELECT 
+    CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
+    ROUND(SUM(o.total_amount), 2) AS total_spending
+FROM customers c
+JOIN orders o
+    ON c.customer_id = o.customer_id
+GROUP BY c.customer_id, c.first_name, c.last_name
+ORDER BY total_spending DESC
+LIMIT 1;
+
+
+
+
+-- Question 48: Find the customer with the lowest total spending
+
+SELECT 
+    CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
+    ROUND(SUM(o.total_amount), 2) AS total_spending
+FROM customers c
+JOIN orders o
+    ON c.customer_id = o.customer_id
+GROUP BY c.customer_id, c.first_name, c.last_name
+ORDER BY total_spending ASC
+LIMIT 1;
+
+
+-- Question 49: Find the customer who placed the highest-value single order
+
+
+SELECT 
+    CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
+    ROUND(MAX(o.total_amount), 2) AS highest_order_amount
+FROM customers c
+JOIN orders o
+    ON c.customer_id = o.customer_id
+GROUP BY c.customer_id, c.first_name, c.last_name
+ORDER BY highest_order_amount DESC
+LIMIT 1;
+
+-- Question 50: Find the customer who placed the lowest-value single order
+
+SELECT 
+    CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
+    ROUND(MIN(o.total_amount), 2) AS lowest_order_amount
+FROM customers c
+JOIN orders o
+    ON c.customer_id = o.customer_id
+GROUP BY c.customer_id, c.first_name, c.last_name
+ORDER BY lowest_order_amount ASC
+LIMIT 1;
+
