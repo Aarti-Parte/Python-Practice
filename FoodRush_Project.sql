@@ -1475,3 +1475,268 @@ GROUP BY c.customer_id, c.first_name, c.last_name
 ORDER BY lowest_order_amount ASC
 LIMIT 1;
 
+use foodrush;
+
+-- Question 51:Retrieve all customers.
+
+SELECT * FROM customers;
+
+
+-- Question 52:Find customers from a particular city.
+
+SELECT city
+FROM customers
+WHERE city = 'Mumbai';
+
+-- Question: 53 find unique cities.
+
+select distinct city from customers;
+
+-- question 54: Display restaurants by rating.
+
+SELECT restaurant_name, rating
+FROM restaurants
+ORDER BY rating DESC;
+
+-- Question 55: Display the top 5 restaurants.
+
+SELECT restaurant_name, rating
+FROM restaurants
+ORDER BY rating DESC
+LIMIT 5;
+
+-- Question 56: Use aliases for tables and columns.
+
+SELECT CONCAT(c.first_name, ' ', c.last_name) AS customer_name
+FROM customers AS c;
+
+
+-- 
+-- Q57 Find restaurants with rating greater than 4.5.
+
+SELECT restaurant_name, rating
+FROM restaurants
+WHERE rating > 4.5;
+
+
+-- Q58:Find orders where total amount is between ₹500 and ₹1,500.
+
+SELECT total_amount
+FROM orders
+WHERE total_amount BETWEEN 500 AND 1500;
+
+-- Q59:Find food items whose names contain "Pizza".
+
+SELECT *
+FROM menu_items
+WHERE item_name LIKE '%Pizza%';
+
+-- Q60:Find total orders per restaurant.
+SELECT restaurant_id, COUNT(order_id) AS total_orders
+FROM orders
+GROUP BY restaurant_id;
+
+-- Q61:Find number of customers in each city.
+SELECT city, COUNT(*) AS total_customers
+FROM customers
+GROUP BY city;
+
+-- Q62: Find average order value for each restaurant.
+SELECT restaurant_id, AVG(total_amount) AS average_order_value
+FROM orders
+GROUP BY restaurant_id;
+
+-- Q.63: Find total sales for each food category.
+SELECT fc.category_name,
+       SUM(oi.subtotal) AS total_sales
+FROM food_categories fc
+JOIN menu_items mi
+    ON fc.category_id = mi.category_id
+JOIN order_items oi
+    ON mi.item_id = oi.item_id
+GROUP BY fc.category_name;
+
+
+-- 
+-- Q64: Find number of orders handled by each delivery partner.
+
+SELECT delivery_partner_id,
+       COUNT(order_id) AS total_orders
+FROM orders
+GROUP BY delivery_partner_id;
+
+-- Q65: Find restaurants having more than 20 orders.
+
+SELECT restaurant_id, COUNT(order_id) AS total_orders
+FROM orders
+GROUP BY restaurant_id
+HAVING COUNT(order_id) > 20;
+
+-- Q66: Find restaurants generating revenue greater than ₹10000.
+
+SELECT restaurant_id, SUM(total_amount) AS revenue
+FROM orders
+GROUP BY restaurant_id
+HAVING SUM(total_amount) > 10000;
+
+-- Q67: Find delivery partners who completed more than 10 deliveries.
+
+SELECT delivery_partner_id,
+       COUNT(delivery_id) AS total_deliveries
+FROM deliveries
+WHERE delivery_status = 'Delivered'
+GROUP BY delivery_partner_id
+HAVING COUNT(delivery_id) > 10;
+
+
+-- Q68: Find food categories generating revenue above a specified amount.
+
+SELECT fc.category_name,
+       SUM(oi.subtotal) AS total_revenue
+FROM food_categories fc
+JOIN menu_items mi
+    ON fc.category_id = mi.category_id
+JOIN order_items oi
+    ON mi.item_id = oi.item_id
+GROUP BY fc.category_name
+HAVING SUM(oi.subtotal) > 20000;
+
+-- Q69: Find Customer Name, Order ID, Restaurant Name, and Order Amount.
+
+SELECT CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
+       o.order_id,
+       r.restaurant_name,
+       o.total_amount AS order_amount
+FROM orders o
+JOIN customers c
+    ON o.customer_id = c.customer_id
+JOIN restaurants r
+    ON o.restaurant_id = r.restaurant_id;
+    
+    
+-- Q70: Find all customers, including customers who have never placed an order.
+
+SELECT c.customer_id,
+       CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
+       o.order_id
+FROM customers c
+LEFT JOIN orders o
+    ON c.customer_id = o.customer_id;
+    
+    
+-- Q71: Find all restaurants and their corresponding orders.
+
+SELECT r.restaurant_id,
+       r.restaurant_name,
+       o.order_id,
+       o.total_amount
+FROM restaurants r
+RIGHT JOIN orders o
+    ON r.restaurant_id = o.restaurant_id;
+    
+    
+-- Q72: Generate possible combinations of restaurants and food categories.
+
+SELECT r.restaurant_name,
+       fc.category_name
+FROM restaurants r
+CROSS JOIN food_categories fc;
+
+-- Q74: Categorize order status using CASE — Delivered, Cancelled, Pending.
+
+SELECT order_id,
+       order_status,
+       CASE
+           WHEN order_status = 'Delivered' THEN 'Delivered'
+           WHEN order_status = 'Cancelled' THEN 'Cancelled'
+           ELSE 'Pending'
+       END AS status_category
+FROM orders;
+
+
+-- Q75: Categorize customers based on spending:
+SELECT 
+    CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
+    SUM(o.total_amount) AS total_spending,
+    CASE
+        WHEN SUM(o.total_amount) < 5000 THEN 'Low Value'
+        WHEN SUM(o.total_amount) BETWEEN 5000 AND 20000 THEN 'Medium Value'
+        ELSE 'High Value'
+    END AS customer_category
+FROM customers c
+JOIN orders o
+    ON c.customer_id = o.customer_id
+GROUP BY c.customer_id, c.first_name, c.last_name;
+
+-- Q76: Categorize restaurants based on rating.
+SELECT restaurant_name,
+       rating,
+       CASE
+           WHEN rating >= 4.5 THEN 'Excellent'
+           WHEN rating >= 3.5 THEN 'Good'
+           ELSE 'Average'
+       END AS rating_category
+FROM restaurants;
+
+-- Q77: Categorize restaurants based on their availability status.
+
+SELECT restaurant_name,
+       status,
+       CASE
+           WHEN status = 'Active' THEN 'Available'
+           WHEN status = 'Inactive' THEN 'Not Available'
+           ELSE 'Other'
+       END AS availability_category
+FROM restaurants;
+
+-- Q78: Find monthly revenue.
+
+SELECT YEAR(order_date) AS order_year,
+       MONTH(order_date) AS order_month,
+       SUM(total_amount) AS monthly_revenue
+FROM orders
+GROUP BY YEAR(order_date), MONTH(order_date)
+ORDER BY order_year, order_month;
+
+-- Q79: Find yearly revenue.
+
+SELECT YEAR(order_date) AS order_year,
+       SUM(total_amount) AS yearly_revenue
+FROM orders
+GROUP BY YEAR(order_date)
+ORDER BY order_year;
+
+-- Q80: Find orders placed on weekends.
+
+SELECT order_id, order_date
+FROM orders
+WHERE DAYOFWEEK(order_date) IN (1, 7);
+
+-- Q81: Find customers registered in a particular year.
+
+SELECT *
+FROM customers
+WHERE YEAR(registration_date) = 2025;
+
+-- Q82: Calculate delivery duration.
+
+SELECT order_id,
+       TIMESTAMPDIFF(MINUTE, pickup_time, delivery_time) AS delivery_duration
+FROM deliveries;
+
+-- Q83: Find the average delivery time.
+
+SELECT AVG(TIMESTAMPDIFF(MINUTE, pickup_time, delivery_time)) AS average_delivery_time
+FROM deliveries;
+
+-- Q84: Generate full customer names.
+
+SELECT CONCAT(first_name, ' ', last_name) AS full_name
+FROM customers;
+
+
+
+
+
+
+
