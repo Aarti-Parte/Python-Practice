@@ -1796,9 +1796,160 @@ select c.customer_id,concat(c. first_name,' ' ,c.last_name)as customer_name,sum(
 
 select r. restaurant_name, sum(o.total_amount)as revenue from restaurants r join orders o on r.restaurant_id = o.restaurant_id group by r.restaurant_id,r. restaurant_name order by revenue desc limit 1 offset 1 ;
 
+use foodrush;
+
+-- Q.101:find customers who order from more than 2 restaurants.
+
+select c. customer_id,concat(c.first_name, ' ',c.last_name)as customer_name,count(distinct o. restaurant_id) as restaurant_count from customers c join orders o on c.customer_id = o. customer_id group by c. customer_id,c.first_name,c.last_name having count(distinct o. restaurant_id)>2;
+
+
+-- Q.102 find customer whose spending is greater than the average spending of customers who have placed more yhan the certain number of orders.
+
+select c.customer_id,
+concat(c.first_name, ' ' ,c. last_name)as customer_name,
+sum(o.total_amount) as total_spending
+from customers c
+join orders o on  c. customer_id = o.customer_id
+group by c. customer_id , c.first_name , c.last_name
+having sum(o.total_amount) > (
+select avg(customer_total)
+from(
+select customer_id, sum(total_amount) as customer_total
+from orders
+group by customer_id
+) as t
+); 
+
+-- Q.103:DISPLAY EACH CUSTOMERS NAME ALONG WITH THE TOTAL NUMBERS OF ORDERS THEY HAVE PLACED.
+select c.customer_id,
+concat(c.first_name, ' ' ,c. last_name)as customer_name,
+(select count(*) from orders o 
+where o. customer_id = c.customer_id)as total_orders from customers c;
 
 
 
+-- Q.104: create a derived table containing customer level revenue.
+select customer_id ,total_spending
+from(
+select customer_id,sum(total_amount)as total_spending from orders
+group by customer_id) as customer_revenue;
+
+-- Q.105: filter restaurants based on their aggregte revenue.
+
+select restaurant_id,
+sum(total_amount)as revenue 
+from orders
+group by restaurant_id
+having sum(total_amount) > (
+select avg(revenue)
+from(
+select restaurant_id,
+sum(total_amount) as revenue
+ from orders
+group by restaurant_id
+)as r
+);
+
+-- Q.106: find customers who have placed at least one order using  the in operator.
+
+select c. customer_id,
+concat(c.first_name, ' ',c.last_name)as customer_name from customers c
+where c. customer_id in(
+select o. customer_id
+from orders o);
+
+
+-- Q.107:find customers who have never placed an order using not in.
+select c. customer_id ,
+concat(first_name, ' ', c.last_name)as customer_name from customers c
+where c. customer_id not in(
+select o. customer_id
+from orders o
+where o. customer_id is not null);
+
+-- Q.108:find customer who have placed atleast one order  using exists.
+select c. customer_id,
+concat(c. first_name, ' ',c.last_name)as customer_name
+from customers c 
+where exists(
+select 1
+from orders o
+where o.customer_id = c. customer_id);
 
 
 
+-- Q.109: find restuarants that have never received any order using not exists.
+
+select r. restaurant_id,
+r.restaurant_name
+from restaurants r 
+where not exists(
+select 1
+from orders o 
+where o. restaurant_id = r. restaurant_id);
+
+-- Q.110 find restarants whose rating is greater than at least one other restaurants rating using any.
+
+select restaurant_name,
+rating 
+from restaurants
+where rating > any
+(
+select rating 
+from restaurants);
+
+
+-- Q.111:find restaurant whose rating is higher than all other restaurants rating. 
+
+select restaurant_name,rating from restaurants
+where rating > all (
+select rating
+from restaurants
+where restaurant_id <> 1
+);
+
+
+-- Q.112: create a transaction to update an orders status and save the changes using commit.
+start transaction;
+update orders
+set order_status = 'delivered'
+where order_id = 1;
+commit;
+
+
+-- Q.113:create a transaction,update an order, status and rollback to undo the changes.
+
+start transaction;
+update orders
+set order_status = "cancelled"
+where order_id = 2;
+rollback;
+
+-- Q.114 create  a transaction ,update an order ,create a savepoint, make another update,and rollback to the savepoint.
+start transaction;
+update orders
+set order_status ='delivered'
+where order_id = 3;
+savepoint sp1;
+update orders
+set order_status = 'cancelled'
+where order_id = 4;
+rollback to sp1;
+commit;
+
+
+-- Q.115: crete a view to show customer details alog with their order details.
+drop view if exists customer_order_details;
+
+create view customer_order_details as 
+select
+c. customer_id,
+concat(c.first_name, ' ',c. last_name) as customer_name,
+c. city,
+o. order_id,
+o.order_date,
+o.total_amount,
+o. order_status
+from  customers c
+join orders o
+on c.customer_id = o.customer_id;
