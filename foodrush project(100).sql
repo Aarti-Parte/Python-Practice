@@ -1953,3 +1953,238 @@ o. order_status
 from  customers c
 join orders o
 on c.customer_id = o.customer_id;
+
+use foodrush;
+
+-- Q.116:create a view to show restaurant performance with total orders and total revenue.
+
+create view restaurant_performance as
+select
+r.restaurant_id,
+r.restaurant_name,
+count(o.order_id )as total_orders,
+sum(o.total_amount)as total_revenue
+from restaurants r
+left join orders o
+on r.restaurant_id = o.restaurant_id
+group by r.restaurant_id,r.restaurant_name;
+
+-- Q.117: create a view to show  delivery partner performance with total deliveries.
+show tables;    
+describe delivery_partners;
+
+create view delivery_partner_performance as 
+select
+dp.delivery_partner_id,
+dp.first_name,
+count(d.delivery_id)as total_deliveries
+from delivery_partners dp
+left join deliveries d
+on dp.delivery_partner_id = d.delivery_partner_id
+group by dp.delivery_partner_id,dp.first_name;
+
+
+-- Q.118: crate a stored procedure  to get all orders of a given customer.
+
+
+DELIMITER //
+create procedure get_customer_orders(in cust_id int)
+begin
+select * from orders
+where 
+customer_id = cust_id;
+ end //
+DELIMITER //  
+
+CALL get_customer_orders(1);                                                                                                                                       
+
+
+show procedure status where db = 'foodrush';
+
+
+-- Q.119: create a stored procedure to generate a custome spending report.
+
+DELIMITER //
+create procedure customer_spending_report(in cust_id int)
+begin
+select
+c.customer_id,
+concat(c.first_name, ' ' ,c.last_name)as customer_name,
+count(o.order_id )as total_orders,
+sum(o. total_amount)as total_spending
+from customers c
+join orders o
+on c.customer_id = o. customer_id
+where c.customer_id = cust_id
+group by c.customer_id,c.first_name,c.last_name;
+end //
+DELIMITER //
+
+-- Q.120:create a function to calculate delivery charge based on distance.
+
+delimiter //
+create function calculate_delivery_charge(distance_km decimal(10,2))
+returns decimal(10,2)
+deterministic
+begin
+return distance_km * 10;
+end //
+delimiter //
+
+select calculate_delivery_charge(5)as delivery_charge;
+
+Q.121: categorize customers based on total spending.
+
+delimiter //
+create function customer_category(total_spending decimal(10,2))
+returns varchar(20)
+deterministic
+begin
+declare category_name varchar(20);
+
+if total_spending < 5000 then
+set category_name ='low';
+elseif total_spending between 5000 and 2000 then
+set category_name = 'medium';
+else set category_name = 'high';
+end if;
+return category_name;
+end //
+delimiter //
+
+-- Q.122:create a trigger to automatically set the order status to deliverd when a delivery is  completed.
+
+delimiter //
+create trigger update_order_status_after_delivery
+after update on deliveries
+for each row
+begin
+if new.delivery_status = 'delivered' then 
+update orders
+set order_status = 'deliverd'
+where order_id = new. order_id;
+end if;
+end //
+delimiter //
+
+
+-- Q.123:create a trigger to automatically update the order staus when payment is completed.
+
+delimiter //
+create trigger update_order_status_after_payment
+after update on payments
+for each row
+begin
+if new.payment_status = 'completed' then 
+update orders
+set order_status = 'comfirmed'
+where order_id = new. order_id;
+end if;
+end //
+delimiter //
+
+-- Q.124: create a mysql event toautomatically delete expired coupons.
+
+
+set  global event_scheduler = on;
+
+delimiter //
+create event delete_expired_coupons
+on schedule every 1 day
+do
+begin
+delete from coupons
+where expiry_date < curdate();
+end // 
+delimiter //
+
+-- Q.125: rank each customers order using row_number() based on order amount.
+
+select
+customer_id,
+order_id,
+total_amount,
+row_number() over (
+partition by customer_id
+order by total_amount desc)
+as order_number
+from orders;
+
+
+-- Q.126: rank orders by total_amount using rank().
+
+select
+order_id,
+customer_id,
+total_amount,
+rank()over(
+order by total_amount desc
+)as order_rank
+from orders;
+
+-- Q.127: rank orders by total_amount using dense_rank().
+
+select
+order_id,
+customer_id,
+total_amount,
+dense_rank() over(
+order by total_amount desc
+) as dense_order_rank
+from orders;
+
+-- Q.128: use lead() to show the next order amount for each customer.
+select
+customer_id,
+order_id,
+total_amount,
+lead(total_amount)over(
+partition by customer_id
+order by order_id
+)as next_order_amount
+from orders;
+
+-- Q.129:use lag() to show the previous order amount for each customer
+select
+customer_id,
+order_id,
+total_amount,
+lag(total_amount)over(
+partition by customer_id
+order by order_id
+)as previous_order_amount
+from orders;
+
+
+-- Q.130: perform a full join between customers and orders.
+
+select 
+c. customer_id,
+o. order_id
+from customers c
+left join orders o
+on c. customer_id = o.customer_id
+
+union
+
+select
+c. customer_id,
+o. order_id
+from customers c
+right join orders o
+on c. customer_id = o.customer_id
+
+
+
+-- Q.131:categorize order based on their total amount as low,medium or high.
+
+
+select
+order_id,
+total_amount,
+case
+when total_amount < 500 then 'low order'
+when total_amount between 500 and 1500 then 'medium order'
+else 'high order'
+end as order_category
+from orders;
