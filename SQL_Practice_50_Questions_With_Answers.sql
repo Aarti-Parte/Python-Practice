@@ -339,5 +339,206 @@ SELECT ROUND (
  
  -- Q29. Find the percentage contribution of each product to total sales.
  
+ select p.product_name,
+ sum(s.quantity * p.price)as product_revenue,
+ round(sum(s.quantity * p.price)*100.0/(select sum(s2.quantity * p2.price)
+ from sales s2
+ join products p2
+ on s2.product_id = p2.product_id),2)as contribution_percentage from products p 
+ join sales s
+ on
+ p.product_id = s.product_id
+ group by p.product_id,p.product_name;
+ 
  
 -- Q30. Find customers who placed orders on consecutive days.
+
+select distinct c.customer_name from customers c
+join orders o1
+on c.customer_id = o1.customer_id
+join orders o2
+on o1.customer_id = o2.customer_id
+and o2.order_date =
+date_add(o1.order_date,interval 0
+ day);
+ 
+ 
+--  Q31. Find the employee with the longest working experience.alter
+select * from employees order by joining_date asc limit 1;
+
+-- . Find employees who joined in the same month.
+
+
+SELECT MONTH(joining_date), COUNT(*)
+FROM employees
+GROUP BY MONTH(joining_date)
+HAVING COUNT(*) > 1;
+
+SELECT e.*
+FROM employees e
+JOIN (
+    SELECT MONTH(joining_date) AS joining_month
+    FROM employees
+    GROUP BY MONTH(joining_date)
+    HAVING COUNT(*) > 1
+) AS m
+ON MONTH(e.joining_date) = m.joining_month
+ORDER BY MONTH(e.joining_date);
+
+-- Q33. Find the third-highest salary without LIMIT.
+select max(salary) as third_highest_salary from employees
+where salary <(
+select max(salary)
+from employees
+where salary < (
+select max(salary)
+from employees
+)
+);
+
+-- Q34. Find departments where average salary is above company average.
+
+select department,avg(salary)as 
+average_salary
+from employees
+group by department
+having avg(salary)>(
+select avg (salary)
+from employees);
+
+-- Q35. Find customers who placed orders in every month.For our dataset, consider January to June 2025.
+
+select customer_id,
+count(distinct month(order_date)) as total_months from orders
+where order_date between
+'2025-01-01' and '2025-06-30'
+group by customer_id
+having count(distinct month(order_date)) = 6;
+
+-- Q36. Find the most profitable product category.Here, revenue is calculated using sales quantity × product price.
+
+select p.category,
+sum(s.quantity * p.price)as
+total_revenue
+from products p 
+join sales s 
+on p.product_id = s.product_id
+group by p.category
+order by total_revenue desc
+limit 1;
+
+-- Q37. Find the customer with the highest number of completed orders.
+
+select c.customer_name,
+count(o.order_id)as
+completed_orders
+from customers c
+join orders o
+on c.customer_id = o.customer_id
+where o.status = 'completed'
+group by c.customer_id,
+c.customer_name
+order by completed_orders desc limit 1;
+
+-- Q38. Find orders with amounts higher than the customer's average order amount.
+
+select * from orders o 
+where amount >(
+select avg(amount)
+from orders
+where customer_id = o.customer_id);
+
+-- Q39. Find the percentage of employees in each department.
+
+select department,
+count(*) as total_employees,
+round(
+count(*)*100.0/
+(select count(*) from employees),2
+)
+as employee_percentage from employees
+group by department;
+
+
+-- Q40. Find employees whose salary is in the top 10% of salaries.
+
+select * from (
+select emp_name ,department,salary,
+percent_rank()over(
+order by salary desc)
+as salary_percentage from employees)
+as ranked
+where salary_percentage <= 0.10;
+
+-- Q41. Find customers who ordered more than once on the same date.
+
+select c.customer_name,
+o.order_date,
+count(*)as total_orders
+from customers c
+join orders o 
+on c.customer_id = o.customer_id
+group by c.customer_id,
+c.customer_name,o.order_date
+having count(*)>0;
+
+-- Q42. Find products whose sales quantity is greater than average product sales quantity.
+with product_sales as (
+select p.product_id,p.product_name,
+coalesce(sum(s.quantity),0)as total_quantity
+from products p
+left join sales s
+on p.product_id = s.product_id
+group by p.product_id,
+p.product_name)
+select * from product_sales
+where total_quantity >(select avg(total_quantity)from product_sales);
+
+-- Q43. Find the highest revenue month.
+
+select year(order_date)as order_month,
+sum(amount)as monthly_revenue from orders
+group by year(order_date),
+month(order_date)
+order by monthly_revenue desc limit 1;
+
+-- Q44. Find customers whose latest order is cancelled.
+
+select c.customer_name,o.order_id,o.order_date,o.status
+from customers c
+join orders o 
+on c.customer_id= o.customer_id
+where o.status = "cancelled"
+and not exists(
+select 1 
+from orders o2
+where o2.customer_id = o.customer_id
+and(
+o2.order_date > o.order_date
+or(o2.order_date = o.order_date
+and o2.order_id > o.order_id)
+)
+);
+
+
+-- Q45. Find employees who earn the same salary as their manager. 
+
+
+select e.emp_name as employee_name,
+m.emp_name as manager_name,
+e.salary
+from employees e
+join employees m
+on e.manager_id = m.emp_id
+where e.salary = m.salary;
+
+
+
+
+
+
+
+
+
+
+
