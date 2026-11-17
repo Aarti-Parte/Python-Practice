@@ -339,7 +339,7 @@ SELECT ROUND (
  
  -- Q29. Find the percentage contribution of each product to total sales.
  
- select p.product_name,
+  select p.product_name,
  sum(s.quantity * p.price)as product_revenue,
  round(sum(s.quantity * p.price)*100.0/(select sum(s2.quantity * p2.price)
  from sales s2
@@ -349,6 +349,8 @@ SELECT ROUND (
  on
  p.product_id = s.product_id
  group by p.product_id,p.product_name;
+ 
+ 
  
  
 -- Q30. Find customers who placed orders on consecutive days.
@@ -361,6 +363,7 @@ on o1.customer_id = o2.customer_id
 and o2.order_date =
 date_add(o1.order_date,interval 0
  day);
+ 
  
  
 --  Q31. Find the employee with the longest working experience.alter
@@ -532,13 +535,85 @@ join employees m
 on e.manager_id = m.emp_id
 where e.salary = m.salary;
 
+-- Q.46 Find the top 2 customers in each city by total spending.
 
+WITH CUSTOMER_SPENDING AS (
+SELECT C.CUSTOMER_ID,
+C.CUSTOMER_NAME,
+C.CITY,
+SUM(O.amount)as total_spending
+from customers c
+join orders o
+on c.customer_id = o.customer_id
+group by c.customer_id,
+c.customer_name,c.city),
+ranked_customers as(
+select *,
+dense_rank()over(partition by city order by total_spending desc)
+as spending_rank from customer_spending)
+select * from ranked_customers 
+where spending_rank <=2;
 
+-- Q47. Find month-over-month revenue growth.
 
+with monthly_revenue as (
+select 
+year(order_date)as order_year,
+month(order_date) as order_month,
+sum(amount)as revenue from orders
+group by year(order_date),
+month(order_date)),
+revenue_comparison as (
+select*,
+lag(revenue)over(
+order by order_year,
+order_month)
+as privious_revenue from
+monthly_revenue)
+select * ,
+round(
+(revenue-privious_revenue)*100.0/ nullif(privious_revenue,0),2)
+as growth_percentage
+from revenue_comparison;
 
+-- Q48. Find products that were never ordered or sold.Important: Our orders table has no product_id column.Therefore, we cannot check whether a product was ordered through orders. We can check products that were never sold using sales.
 
+select * from products p 
+where not exists(
+select 1
+from sales s
+where s.product_id = p.product_id );
 
+-- Q49. Find the median employee salary.
 
+WITH salary_ranking AS (
+SELECT
+ salary,
+ROW_NUMBER() OVER(ORDER BY  salary ) AS  row_num,
+count(*) OVER() AS  total_rows
+FROM employees
+)
+SELECT AVG (salary) AS median_salary
+FROM salary_ranking
+WHERE row_num IN (
+FLOOR((total_rows + 1) / 2),
+FLOOR((total_rows + 2) / 2)
+);
 
+-- Q50. Create a CTE to calculate total revenue by customer and rank customers.
 
+WITH MONTHLY_REVENUE AS (
+SELECT c.customer_id,
+c. customer_name,
+sum(o.amount)as total_revenue
+from customers c
+join orders o
+on c.customer_id = o.customer_id
+group by c.customer_id,
+c.customer_name)
+select * ,
+dense_rank()over(
+order by total_revenue desc
+) as revenue_rank
+from monthly_revenue;
 
